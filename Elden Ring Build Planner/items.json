@@ -1,0 +1,121 @@
+[
+    {
+        "Name": "Rivers of Blood",
+        "Type": 0,
+        "AttackPower": 89,
+        "Scaling": "Dexterity, Arcane",
+        "WeaponType": "Katana",
+        "Location": "Dropped by Bloody Finger Okina at the Church of Repose"
+    },
+    {
+        "Name": "Dark Moon Greatsword",
+        "Type": 0,
+        "AttackPower": 82,
+        "Scaling": "Intelligence, Strength, Dexterity",
+        "WeaponType": "Greatsword",
+        "Location": "Awarded by Ranni after completing her questline"
+    },
+    {
+        "Name": "Blasphemous Blade",
+        "Type": 0,
+        "AttackPower": 121,
+        "Scaling": "Faith, Strength, Dexterity",
+        "WeaponType": "Greatsword",
+        "Location": "Dropped by Rykard, Lord of Blasphemy"
+    },
+    {
+        "Name": "Bloodhound's Fang",
+        "Type": 0,
+        "AttackPower": 141,
+        "Scaling": "Dexterity, Strength",
+        "WeaponType": "Curved Greatsword",
+        "Location": "Dropped by Bloodhound Knight Darriwil in Forlorn Hound Evergaol"
+    },
+    {
+        "Name": "Lionel's Set",
+        "Type": 1,
+        "Defense": 38,
+        "Poise": 60,
+        "Weight": 50,
+        "Location": "Found in Leyndell, Royal Capital"
+    },
+    {
+        "Name": "Veteran's Set",
+        "Type": 1,
+        "Defense": 41,
+        "Poise": 65,
+        "Weight": 55,
+        "Location": "Purchased from Enia after defeating Commander Niall"
+    },
+    {
+        "Name": "Malenia's Set",
+        "Type": 1,
+        "Defense": 32,
+        "Poise": 50,
+        "Weight": 45,
+        "Location": "Purchased from Enia after defeating Malenia, Blade of Miquella"
+    },
+    {
+        "Name": "Radagon Scarseal",
+        "Type": 2,
+        "Effect": "Boosts Strength but increases damage taken",
+        "Location": "Dropped by a Lesser Ulcerated Tree Spirit in Weeping Peninsula"
+    },
+    {
+        "Name": "Erdtree's Favor +2",
+        "Type": 2,
+        "Effect": "Raises maximum HP, stamina, and equip load",
+        "Location": "Found near the base of the giant spear in Leyndell, Ashen Capital"
+    },
+    {
+        "Name": "Dragoncrest Greatshield Talisman",
+        "Type": 2,
+        "Effect": "Vastly reduces physical damage taken",
+        "Location": "Found in a chest in Elphael, Brace of the Haligtree"
+    },
+    {
+        "Name": "Comet Azur",
+        "Type": 3,
+        "FP_Cost": 40,
+        "Scaling": "Intelligence",
+        "SpellType": "Sorcery",
+        "Location": "Received from Primeval Sorcerer Azur in Mt. Gelmir"
+    },
+    {
+        "Name": "Flame, Grant Me Strength",
+        "Type": 3,
+        "FP_Cost": 28,
+        "Scaling": "Faith",
+        "SpellType": "Incantation",
+        "Location": "Found behind Fort Gael in Caelid"
+    },
+    {
+        "Name": "Ranni's Dark Moon",
+        "Type": 3,
+        "FP_Cost": 62,
+        "Scaling": "Intelligence",
+        "SpellType": "Sorcery",
+        "Location": "Found in Chelona's Rise after completing Ranni's questline"
+    },
+    {
+        "Name": "Bloodhound's Step",
+        "Type": 4,
+        "Affinity": "Keen",
+        "WeaponType": "All melee weapons",
+        "Location": "Dropped by Night's Cavalry in Dragonbarrow"
+    },
+    {
+        "Name": "Flaming Strike",
+        "Type": 4,
+        "Affinity": "Flame",
+        "WeaponType": "Swords, Axes",
+        "Location": "Dropped by a Teardrop Scarab in Redmane Castle"
+    },
+    {
+        "Name": "Lion's Claw",
+        "Type": 4,
+        "Affinity": "Heavy",
+        "WeaponType": "Colossal Swords",
+        "Location": "Dropped by a Lion Guardian in Fort Gael"
+    }
+]
