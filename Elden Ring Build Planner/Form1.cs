@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Elden_Ring_Build_Planner.Data;
@@ -13,6 +14,7 @@ namespace Elden_Ring_Build_Planner
     {
         private Character character;
         private List<Item> items = new List<Item>();
+        private static readonly SemaphoreSlim semaphore = new(1, 1); // Prevents race conditions
 
         public Form1()
         {
@@ -25,11 +27,9 @@ namespace Elden_Ring_Build_Planner
         private async void Form1_Load(object sender, EventArgs e)
         {
             MessageBox.Show("Form1_Load started", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
             Console.WriteLine("Form1_Load started");
 
             items = await DataHandler.LoadItemsAsync();
-
             Console.WriteLine($"Items loaded in Form1: {items.Count}");
 
             lstItems.DataSource = items;
@@ -46,7 +46,7 @@ namespace Elden_Ring_Build_Planner
             character.ItemAdded += Character_ItemAdded;
             character.ItemRemoved += Character_ItemRemoved;
 
-            LoadSavedBuilds(); // Loads available builds into ComboBox
+            await LoadSavedBuilds(); // Loads available builds into ComboBox asynchronously
 
             UpdateCharacterInfo();
         }
@@ -94,7 +94,7 @@ namespace Elden_Ring_Build_Planner
         }
 
         /// <summary>
-        /// Saves the current character build with a specified name
+        /// Saves the current character build with a specified name asynchronously
         /// </summary>
         private async void btnSaveBuild_Click(object sender, EventArgs e)
         {
@@ -106,22 +106,46 @@ namespace Elden_Ring_Build_Planner
                 return;
             }
 
-            await BuildManager.SaveBuildAsync(character, buildName);
-            MessageBox.Show($"Build '{buildName}' saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-            LoadSavedBuilds(); // Refresh the saved builds list
+            await Task.Run(async () =>
+            {
+                await semaphore.WaitAsync();
+                try
+                {
+                    await BuildManager.SaveBuildAsync(character, buildName);
+                    Invoke(new Action(() => MessageBox.Show($"Build '{buildName}' saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information)));
+                    await LoadSavedBuilds();
+                }
+                finally
+                {
+                    semaphore.Release();
+                }
+            });
         }
 
         /// <summary>
-        /// Loads the selected saved build
+        /// Loads the selected saved build asynchronously
         /// </summary>
         private async void btnLoadBuild_Click(object sender, EventArgs e)
         {
             if (cmbSavedBuilds.SelectedItem is string selectedBuild)
             {
-                character = await BuildManager.LoadBuildAsync(selectedBuild);
-                MessageBox.Show($"Loaded Build: {character.Name}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                UpdateCharacterInfo();
+                await Task.Run(async () =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        character = await BuildManager.LoadBuildAsync(selectedBuild);
+                        Invoke(new Action(() =>
+                        {
+                            MessageBox.Show($"Loaded Build: {character.Name}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            UpdateCharacterInfo();
+                        }));
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
             }
             else
             {
@@ -130,11 +154,12 @@ namespace Elden_Ring_Build_Planner
         }
 
         /// <summary>
-        /// Populates the saved builds ComboBox
+        /// Populates the saved builds ComboBox asynchronously
         /// </summary>
-        private async void LoadSavedBuilds()
+        private async Task LoadSavedBuilds()
         {
-            cmbSavedBuilds.DataSource = await BuildManager.GetSavedBuildsAsync();
+            var builds = await Task.Run(async () => await BuildManager.GetSavedBuildsAsync());
+            Invoke(new Action(() => cmbSavedBuilds.DataSource = builds));
         }
 
         /// <summary>
@@ -181,8 +206,8 @@ namespace Elden_Ring_Build_Planner
         {
             if (keyData == Keys.Escape)
             {
-                Application.Exit(); // Closes the application
-                return true; // Indicates that the key event was handled
+                Application.Exit();
+                return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
