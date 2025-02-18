@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
 using Elden_Ring_Build_Planner.Models;
 
@@ -12,46 +13,53 @@ namespace Elden_Ring_Build_Planner.Data
     public static class BuildManager
     {
         private static readonly string BuildDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SavedBuilds");
+        private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, Converters = { new ItemJsonConverter() } };
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1); // Prevents race conditions
 
-        private static readonly JsonSerializerOptions JsonOptions = new()
+        static BuildManager()
         {
-            WriteIndented = true,
-            Converters = { new ItemJsonConverter() }
-        };
+            if (!Directory.Exists(BuildDirectory))
+                Directory.CreateDirectory(BuildDirectory);
+        }
 
         /// <summary>
         /// Asynchronously saves the character build with a specified name.
         /// </summary>
         public static async Task SaveBuildAsync(Character character, string buildName)
         {
-            if (character == null || string.IsNullOrWhiteSpace(buildName))
+            await Task.Run(async () =>
             {
-                Debug.WriteLine("Invalid build or build name.");
-                return;
-            }
-
-            try
-            {
-                if (!Directory.Exists(BuildDirectory))
-                    Directory.CreateDirectory(BuildDirectory);
-
-                string buildFilePath = Path.Combine(BuildDirectory, $"{buildName}.json");
-
-                var buildData = new BuildData
+                await semaphore.WaitAsync(); // Ensures only one thread accesses the file system at a time
+                try
                 {
-                    Name = buildName,
-                    EquippedItems = new List<Item>(character.CharacterInventory.GetItems())
-                };
+                    if (character == null || string.IsNullOrWhiteSpace(buildName))
+                    {
+                        Debug.WriteLine("Invalid build or build name.");
+                        return;
+                    }
 
-                string jsonString = JsonSerializer.Serialize(buildData, JsonOptions);
-                await File.WriteAllTextAsync(buildFilePath, jsonString);
+                    string buildFilePath = Path.Combine(BuildDirectory, $"{buildName}.json");
 
-                Debug.WriteLine($"Build '{buildName}' saved successfully.");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error saving build: {ex.Message}");
-            }
+                    var buildData = new BuildData
+                    {
+                        Name = buildName,
+                        EquippedItems = new List<Item>(character.CharacterInventory.GetItems())
+                    };
+
+                    string jsonString = JsonSerializer.Serialize(buildData, JsonOptions);
+                    await File.WriteAllTextAsync(buildFilePath, jsonString);
+
+                    Debug.WriteLine($"Build '{buildName}' saved successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error saving build: {ex.Message}");
+                }
+                finally
+                {
+                    semaphore.Release(); // Release the lock
+                }
+            });
         }
 
         /// <summary>
@@ -59,56 +67,67 @@ namespace Elden_Ring_Build_Planner.Data
         /// </summary>
         public static async Task<Character> LoadBuildAsync(string buildName)
         {
-            string buildFilePath = Path.Combine(BuildDirectory, $"{buildName}.json");
-
-            if (!File.Exists(buildFilePath))
+            return await Task.Run(async () =>
             {
-                Debug.WriteLine($"Build '{buildName}' not found. Returning default character.");
-                return new Character("Tarnished");
-            }
-
-            try
-            {
-                string jsonString = await File.ReadAllTextAsync(buildFilePath);
-                var buildData = JsonSerializer.Deserialize<BuildData>(jsonString, JsonOptions);
-
-                if (buildData == null)
+                await semaphore.WaitAsync();
+                try
                 {
-                    Debug.WriteLine("Error: Loaded build data is null. Returning default character.");
+                    string buildFilePath = Path.Combine(BuildDirectory, $"{buildName}.json");
+
+                    if (!File.Exists(buildFilePath))
+                    {
+                        Debug.WriteLine($"Build '{buildName}' not found. Returning default character.");
+                        return new Character("Tarnished");
+                    }
+
+                    string jsonString = await File.ReadAllTextAsync(buildFilePath);
+                    var buildData = JsonSerializer.Deserialize<BuildData>(jsonString, JsonOptions);
+
+                    if (buildData == null)
+                    {
+                        Debug.WriteLine("Error: Loaded build data is null. Returning default character.");
+                        return new Character("Tarnished");
+                    }
+
+                    Character character = new Character(buildData.Name);
+                    foreach (var item in buildData.EquippedItems)
+                    {
+                        character.AddItem(item);
+                    }
+
+                    Debug.WriteLine($"Build '{buildName}' loaded successfully.");
+                    return character;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error loading build: {ex.Message}");
                     return new Character("Tarnished");
                 }
-
-                Character character = new Character(buildData.Name);
-                foreach (var item in buildData.EquippedItems)
+                finally
                 {
-                    character.AddItem(item);
+                    semaphore.Release();
                 }
-
-                Debug.WriteLine($"Build '{buildName}' loaded successfully.");
-                return character;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Error loading build: {ex.Message}");
-                return new Character("Tarnished");
-            }
+            });
         }
 
         /// <summary>
-        /// Gets a list of all saved builds.
+        /// Gets a list of all saved builds asynchronously.
         /// </summary>
-        public static List<string> GetSavedBuilds()
+        public static async Task<List<string>> GetSavedBuildsAsync()
         {
-            if (!Directory.Exists(BuildDirectory))
-                return new List<string>();
-
-            List<string> builds = new();
-            foreach (var file in Directory.GetFiles(BuildDirectory, "*.json"))
+            return await Task.Run(() =>
             {
-                builds.Add(Path.GetFileNameWithoutExtension(file));
-            }
+                if (!Directory.Exists(BuildDirectory))
+                    return new List<string>();
 
-            return builds;
+                List<string> builds = new();
+                foreach (var file in Directory.GetFiles(BuildDirectory, "*.json"))
+                {
+                    builds.Add(Path.GetFileNameWithoutExtension(file));
+                }
+
+                return builds;
+            });
         }
     }
 

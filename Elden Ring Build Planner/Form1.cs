@@ -132,9 +132,9 @@ namespace Elden_Ring_Build_Planner
         /// <summary>
         /// Populates the saved builds ComboBox
         /// </summary>
-        private void LoadSavedBuilds()
+        private async void LoadSavedBuilds()
         {
-            cmbSavedBuilds.DataSource = BuildManager.GetSavedBuilds();
+            cmbSavedBuilds.DataSource = await BuildManager.GetSavedBuildsAsync();
         }
 
         /// <summary>
